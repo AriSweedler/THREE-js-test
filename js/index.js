@@ -9,22 +9,22 @@ var Colors = {
 
 window.addEventListener('load', init, false);
 function init() {
-	// set up the scene, the camera and the renderer
-	createScene();
-
-	// add the lights
-	createLights();
-
-	// add the objects
-	createPlane();
+	createScene(); 	// set up the scene, the camera and the renderer
+	createLights(); // add the lights
+	createPlane(); // add the objects
 	createSea();
 	createSky();
+
+	//add the listener
+	document.addEventListener('mousemove', recordMouseMove, false);
 
 	// start a loop that will update the objects' positions
 	// and render the scene on each frame
 	loop();
 }
 
+/**************************************/
+/*********create our scene*************/
 var scene,
 		camera, fieldOfView, aspectRatio, nearPlane, farPlane, HEIGHT, WIDTH,
 		renderer, container;
@@ -39,7 +39,7 @@ function createScene() {
 
 	// Add a fog effect to the scene; same color as the
 	// background color used in the style sheet
-	scene.fog = new THREE.Fog(0xf7d9aa, 100, 950);
+	scene.fog = new THREE.Fog(0xf7d9aa, 100, 1150);
 
 	// Create the camera
 	aspectRatio = WIDTH / HEIGHT;
@@ -128,7 +128,22 @@ function handleWindowResize() {
 	camera.updateProjectionMatrix();
 }
 
+function loop(){
+	// Rotate the propeller, the sea and the sky
+	sea.mesh.rotation.z += .005;
+	sky.mesh.rotation.z += .007;
+	updatePlane();
+
+	// render the scene
+	renderer.render(scene, camera);
+
+	// call the loop function again
+	requestAnimationFrame(loop);
+}
 // Instantiate the sea and add it to the scene:
+
+/**************************************/
+/*********create our objects***********/
 var sea;
 function createSea(mySea){
 	sea = new Sea();
@@ -151,15 +166,45 @@ function createPlane(){
 	scene.add(airplane.mesh);
 }
 
-function loop(){
-	// Rotate the propeller, the sea and the sky
+/**************************************/
+/****************other*****************/
+var mousePos={x:0, y:0};
+function recordMouseMove(event) {
+	// here we are converting the mouse position value received
+	// to a normalized value varying between -1 and 1; (useful for normalization speed)
+	// this is the formula for the horizontal axis:
+
+	var tx = -1 + (event.clientX / WIDTH)*2;
+
+	// for the vertical axis, we need to inverse the formula
+	// because the 2D y-axis goes the opposite direction of the 3D y-axis
+	var normalY = -1 + (event.clientY / WIDTH)*2;
+	var ty = -1 * normalY;
+	mousePos = {x:tx, y:ty};
+}
+
+function updatePlane(){
+	// let's move the airplane between X.MIN and X.MAX on the X axis,
+	// and between Y.MIN and Y.MAX on the Y axis,
+	// depending on the mouse position which ranges between -1 and 1 on both axes;
+	airplane.mesh.position.y = normalize(mousePos.y, airplane, "Y");
+	airplane.mesh.position.x = normalize(mousePos.x, airplane, "X");
+	airplane.pilot.updateHairs();
 	airplane.propeller.rotation.x += 0.3;
-	sea.mesh.rotation.z += .005;
-	sky.mesh.rotation.z += .007;
 
-	// render the scene
-	renderer.render(scene, camera);
+	// airplane.mesh.rotation.y += .01;
+	// airplane.mesh.rotation.x += .013;
+	// airplane.mesh.rotation.z += .0023;
+}
 
-	// call the loop function again
-	requestAnimationFrame(loop);
+//converts a map (from -1 to 1) to display coordinates (based on a scale local to the object and a given axis) (from 25 to 150, for example)
+function normalize(mapPos_original, myObj, axis){
+	mapMin = -1;
+	mapMax = 1;
+	var mapPos = Math.max(Math.min(mapPos_original, mapMax), mapMin);
+	var percentDisplacement = (mapPos-mapMin)/(mapMax-mapMin);
+	var scalingFactor = myObj[axis].MAX - myObj[axis].MIN;	//max target displacement
+	var targetDisplacement = (percentDisplacement*scalingFactor);
+	var targetPosition = myObj[axis].MIN + targetDisplacement;
+	return targetPosition
 }

@@ -1,11 +1,26 @@
 var AirPlane = function() {
+	this.X = {MIN: -100, MAX: 100}
+	this.Y = {MIN: 25, MAX: 150}
 
 	this.mesh = new THREE.Object3D();
 
 	// Create the cabin
-	var geomCockpit = new THREE.BoxGeometry(60,50,50,1,1,1);
+	var geomCockpit = new THREE.BoxGeometry(80,50,50,1,1,1);
 	var matCockpit = new THREE.MeshPhongMaterial({color:Colors.red, shading:THREE.FlatShading});
 	var cockpit = new THREE.Mesh(geomCockpit, matCockpit);
+
+	// we can access a specific vertex of a shape through
+	// the vertices array, and then move its x, y and z property:
+	//By adjusting the verticies like this, we cam make our cockpit look nicer
+	geomCockpit.vertices[4].y-=10;
+	geomCockpit.vertices[4].z+=20;
+	geomCockpit.vertices[5].y-=10;
+	geomCockpit.vertices[5].z-=20;
+	geomCockpit.vertices[6].y+=30;
+	geomCockpit.vertices[6].z+=20;
+	geomCockpit.vertices[7].y+=30;
+	geomCockpit.vertices[7].z-=20;
+
 	cockpit.castShadow = true;
 	cockpit.receiveShadow = true;
 	this.mesh.add(cockpit);
@@ -54,4 +69,11 @@ var AirPlane = function() {
 	this.propeller.add(blade);
 	this.propeller.position.set(50,0,0);
 	this.mesh.add(this.propeller);
+
+	//pilot
+	this.pilot = new Pilot();
+	this.pilot.size = 1.6
+	this.pilot.mesh.scale.set(this.pilot.size, this.pilot.size, this.pilot.size);
+	this.pilot.mesh.position.y = 35;
+	this.mesh.add(this.pilot.mesh)
 };
