@@ -14,6 +14,7 @@ function init() {
 	createPlane(); // add the objects
 	createSea();
 	createClouds();
+	createSun();
 
 	//add the listener
 	document.addEventListener('mousemove', recordMouseMove, false);
@@ -25,7 +26,7 @@ function init() {
 
 function loop(){
 
-	updateClouds();
+	updateSky();
 	updatePlane();
 	updateSea();
 
@@ -168,16 +169,13 @@ function createPlane(){
 	scene.add(airplane.mesh);
 }
 
-// var sunSky;
-// function createSunSky(){
-// 	sunSky = new SunSky();
-// 	sunSky.mesh.position.y = -600;
-// 	sunSky.mesh.rotation.z = sunSky.sun.MIN_ANGLE; // 2*Math.PI/5;
-// 	scene.add(sunSky.mesh);
-// 	scene.add(sunSky.sun.light);
-//
-// 	scene.add(sunSky.meshWire);
-// }
+var sun;
+function createSun(){
+	sun = new Sun();
+	sun.skyMesh.position.y = -600;
+	//sun.mesh.rotation.z = sun.MIN_ANGLE; // 2*Math.PI/5;
+	scene.add(sun.skyMesh);
+}
 
 /**************************************/
 /****************other*****************/
@@ -224,13 +222,12 @@ function updateSea() {
 	sea.mesh.rotation.z += .003;
 }
 
-function updateClouds() {
-	clouds.mesh.rotation.z += .007;
-}
-
 function updateSky() {
-	updateClouds();
-	
+	//update clouds
+	clouds.mesh.rotation.z += .007;
+
+	//update sun and lights
+	var targetX = normalize(mousePos.x, sun, "X");
 }
 
 //converts a map (from -1 to 1) to display coordinates (based on a scale local to the object and a given axis) (from 25 to 150, for example)
