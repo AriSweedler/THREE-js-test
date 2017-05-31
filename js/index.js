@@ -109,32 +109,6 @@ function createLights() {
 	//this is what we're using to illuminate our objects
 	hemisphereLight = new THREE.HemisphereLight(0xaaaaaa,0x000000, .9)
 	scene.add(hemisphereLight);
-
-	// A directional light shines from a specific direction.
-		// It acts like the sun, that means that all the rays produced are parallel.
-		shadowLight = new THREE.DirectionalLight(0xffffff, .9);
-
-		// Set the direction of the light
-		shadowLight.position.set(150, 350, 350);
-
-		// Allow shadow casting
-		shadowLight.castShadow = true;
-
-		// define the visible area of the projected shadow
-		shadowLight.shadow.camera.left = -400;
-		shadowLight.shadow.camera.right = 400;
-		shadowLight.shadow.camera.top = 400;
-		shadowLight.shadow.camera.bottom = -400;
-		shadowLight.shadow.camera.near = 1;
-		shadowLight.shadow.camera.far = 1000;
-
-		// define the resolution of the shadow; the higher the better,
-		// but also the more expensive and less performant
-		shadowLight.shadow.mapSize.width = 2048;
-		shadowLight.shadow.mapSize.height = 2048;
-
-		// to activate the lights, just add them to the scene
-		scene.add(shadowLight);
 }
 
 function handleWindowResize() {
@@ -173,7 +147,6 @@ var sun;
 function createSun(){
 	sun = new Sun();
 	sun.skyMesh.position.y = -600;
-	//sun.mesh.rotation.z = sun.MIN_ANGLE; // 2*Math.PI/5;
 	scene.add(sun.skyMesh);
 }
 
@@ -226,8 +199,18 @@ function updateSky() {
 	//update clouds
 	clouds.mesh.rotation.z += .007;
 
-	//update sun and lights
-	var targetX = normalize(mousePos.x, sun, "X");
+	sun.skyMesh.rotation.z += mousePos.x * (-1/20);
+	//sun.sunMesh.position.x += .1;
+	//sun.skyMesh.rotation.z = 0;
+	//console.log("Skymesh is rotated at: " + sun.skyMesh.rotation.z + " radians");
+	//update sunlight
+	console.log(sun.getSunCoords());
+	//shadowLight.position.set(100, 350, 350);
+
+	// Node
+	// children []
+	//
+
 }
 
 //converts a map (from -1 to 1) to display coordinates (based on a scale local to the object and a given axis) (from 25 to 150, for example)
