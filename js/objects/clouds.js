@@ -1,5 +1,5 @@
 // Define a Sky Object
-Sky = function(){
+Clouds = function(){
 	// Create an empty container
 	this.mesh = new THREE.Object3D();
 
@@ -13,7 +13,6 @@ Sky = function(){
 	// create the clouds
 	for(var i=0; i<this.nClouds; i++){
 		var c = new Cloud();
-
 		// set the rotation and the position of each cloud;
 		// for that we use a bit of trigonometry
 		var a = stepAngle*i; // this is the final angle of the cloud

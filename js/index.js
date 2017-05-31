@@ -13,7 +13,7 @@ function init() {
 	createLights(); // add the lights
 	createPlane(); // add the objects
 	createSea();
-	createSky();
+	createClouds();
 
 	//add the listener
 	document.addEventListener('mousemove', recordMouseMove, false);
@@ -21,6 +21,19 @@ function init() {
 	// start a loop that will update the objects' positions
 	// and render the scene on each frame
 	loop();
+}
+
+function loop(){
+
+	updateClouds();
+	updatePlane();
+	updateSea();
+
+	// render the scene
+	renderer.render(scene, camera);
+
+	// call the loop function again
+	requestAnimationFrame(loop);
 }
 
 /**************************************/
@@ -84,43 +97,46 @@ function createScene() {
 	window.addEventListener('resize', handleWindowResize, false);
 }
 
-var hemisphereLight, shadowLight;
+var hemisphereLight, ambientLight;
+var shadowLight;
 function createLights() {
+	// an ambient light modifies the global color of a scene and makes the shadows softer
+	ambientLight = new THREE.AmbientLight(0xc03c40, .16);
+	scene.add(ambientLight);
+
 	// A "hemisphere light" is a gradient colored light;
-	// the first parameter is the sky color,
-  // the second parameter is the ground color,
-	// the third parameter is the intensity of the light
+	//this is what we're using to illuminate our objects
 	hemisphereLight = new THREE.HemisphereLight(0xaaaaaa,0x000000, .9)
-  //this is what we're using to illuminate our objects
+	scene.add(hemisphereLight);
 
 	// A directional light shines from a specific direction.
-	// It acts like the sun, that means that all the rays produced are parallel.
-	shadowLight = new THREE.DirectionalLight(0xffffff, .9);
-  // this is what we're using to cast our shadows
+		// It acts like the sun, that means that all the rays produced are parallel.
+		shadowLight = new THREE.DirectionalLight(0xffffff, .9);
 
-	shadowLight.position.set(150, 350, 350);
-	shadowLight.castShadow = true;
+		// Set the direction of the light
+		shadowLight.position.set(150, 350, 350);
 
-	// define the visible area of the projected shadow
-	shadowLight.shadow.camera.left = -400;
-	shadowLight.shadow.camera.right = 400;
-	shadowLight.shadow.camera.top = 400;
-	shadowLight.shadow.camera.bottom = -400;
-	shadowLight.shadow.camera.near = 1;
-	shadowLight.shadow.camera.far = 1000;
-  /*************************************/
-	shadowLight.shadow.mapSize.width = 2048;
-	shadowLight.shadow.mapSize.height = 2048;
-  // define the resolution of the shadow; the higher the better,
-  // but also the more expensive and less performant
+		// Allow shadow casting
+		shadowLight.castShadow = true;
 
-	// Finally, activate the lights, add them to the scene.
-	scene.add(hemisphereLight);
-	scene.add(shadowLight);
+		// define the visible area of the projected shadow
+		shadowLight.shadow.camera.left = -400;
+		shadowLight.shadow.camera.right = 400;
+		shadowLight.shadow.camera.top = 400;
+		shadowLight.shadow.camera.bottom = -400;
+		shadowLight.shadow.camera.near = 1;
+		shadowLight.shadow.camera.far = 1000;
+
+		// define the resolution of the shadow; the higher the better,
+		// but also the more expensive and less performant
+		shadowLight.shadow.mapSize.width = 2048;
+		shadowLight.shadow.mapSize.height = 2048;
+
+		// to activate the lights, just add them to the scene
+		scene.add(shadowLight);
 }
 
 function handleWindowResize() {
-  //console.log("window resized");
 	HEIGHT = window.innerHeight;
 	WIDTH = window.innerWidth;
 	renderer.setSize(WIDTH, HEIGHT);
@@ -128,34 +144,20 @@ function handleWindowResize() {
 	camera.updateProjectionMatrix();
 }
 
-function loop(){
-	// Rotate the propeller, the sea and the sky
-	sea.mesh.rotation.z += .005;
-	sky.mesh.rotation.z += .007;
-	updatePlane();
-
-	// render the scene
-	renderer.render(scene, camera);
-
-	// call the loop function again
-	requestAnimationFrame(loop);
-}
-// Instantiate the sea and add it to the scene:
-
 /**************************************/
 /*********create our objects***********/
 var sea;
-function createSea(mySea){
+function createSea(){
 	sea = new Sea();
 	sea.mesh.position.y = -600; // push it a little bit at the bottom of the scene
 	scene.add(sea.mesh); // add the mesh of the sea to the scene
 }
 
-var sky;
-function createSky(){
-	sky = new Sky();
-	sky.mesh.position.y = -600;
-	scene.add(sky.mesh);
+var clouds;
+function createClouds(){
+	clouds = new Clouds();
+	clouds.mesh.position.y = -600;
+	scene.add(clouds.mesh);
 }
 
 var airplane;
@@ -165,6 +167,17 @@ function createPlane(){
 	airplane.mesh.position.y = 100;
 	scene.add(airplane.mesh);
 }
+
+// var sunSky;
+// function createSunSky(){
+// 	sunSky = new SunSky();
+// 	sunSky.mesh.position.y = -600;
+// 	sunSky.mesh.rotation.z = sunSky.sun.MIN_ANGLE; // 2*Math.PI/5;
+// 	scene.add(sunSky.mesh);
+// 	scene.add(sunSky.sun.light);
+//
+// 	scene.add(sunSky.meshWire);
+// }
 
 /**************************************/
 /****************other*****************/
@@ -186,15 +199,38 @@ function recordMouseMove(event) {
 function updatePlane(){
 	// let's move the airplane between X.MIN and X.MAX on the X axis,
 	// and between Y.MIN and Y.MAX on the Y axis,
-	// depending on the mouse position which ranges between -1 and 1 on both axes;
-	airplane.mesh.position.y = normalize(mousePos.y, airplane, "Y");
-	airplane.mesh.position.x = normalize(mousePos.x, airplane, "X");
+	// depending on the mouse position which ranges between -1 and 1 on both axes
+	var targetX = normalize(mousePos.x*1.5, airplane, "X");
+	var targetY = normalize(mousePos.y*1.5, airplane, "Y");
+
+	var targetDelta = targetY-airplane.mesh.position.y;
+	var smoothDelta = (targetDelta < 70)?((targetDelta)*0.1):(targetDelta);
+	// Move the plane at each frame by adding a fraction of the remaining distance
+	airplane.mesh.position.y += smoothDelta;
+
+	// Rotate the plane proportionally to the remaining distance (aka the velocity)
+	airplane.mesh.rotation.z = (smoothDelta)*0.128;
+	airplane.mesh.rotation.x = (smoothDelta)*-0.032;	//additionally, rotate the plane based on its height so we don't get an unseemly view of the plane's underside when it's high up
+	var height = ((airplane.Y.MIN + airplane.Y.MAX)/2) - airplane.mesh.position.y;
+	var heightRot = (height/(-4*airplane.Y.MAX));
+	airplane.mesh.rotation.x += heightRot;
+
 	airplane.pilot.updateHairs();
 	airplane.propeller.rotation.x += 0.3;
+}
 
-	// airplane.mesh.rotation.y += .01;
-	// airplane.mesh.rotation.x += .013;
-	// airplane.mesh.rotation.z += .0023;
+function updateSea() {
+	sea.moveWaves();
+	sea.mesh.rotation.z += .003;
+}
+
+function updateClouds() {
+	clouds.mesh.rotation.z += .007;
+}
+
+function updateSky() {
+	updateClouds();
+	
 }
 
 //converts a map (from -1 to 1) to display coordinates (based on a scale local to the object and a given axis) (from 25 to 150, for example)
